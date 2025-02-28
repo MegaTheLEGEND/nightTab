@@ -384,23 +384,55 @@ theme.background.area = {
 
 theme.background.image = {
   render: () => {
-
     const html = document.querySelector('html');
+    const urlString = state.get.current().theme.background.image.url;
 
-    if (isValidString(state.get.current().theme.background.image.url)) {
+    if (isValidString(urlString)) {
+      // Split URLs based on whitespace and remove empty strings
+      const allUrls = urlString.trim().split(/\s+/).filter(item => item !== '');
+      console.log(`Total links found: ${allUrls.length}`);
 
-      const allUrls = trimString(state.get.current().theme.background.image.url).split(/\s+/).filter((item) => { return item != ''; });
+      if (allUrls.length === 0) {
+        html.style.removeProperty('--theme-background-image');
+        return;
+      }
 
-      html.style.setProperty('--theme-background-image', 'url("' + allUrls[Math.floor(Math.random() * allUrls.length)] + '")');
+      // Select a random URL
+      const randomUrl = allUrls[Math.floor(Math.random() * allUrls.length)];
+      console.log(`Chosen link: ${randomUrl}`);
 
+      // Check if the selected URL is a Pixabay API call
+      if (randomUrl.includes('pixabay.com/api')) {
+        fetch(randomUrl)
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.hits && data.hits.length > 0) {
+              console.log(`Images found in Pixabay response: ${data.hits.length}`);
+              // Choose a random image from the hits array
+              const randomIndex = Math.floor(Math.random() * data.hits.length);
+              const imageUrl = data.hits[randomIndex].largeImageURL;
+              console.log(`Chosen Pixabay image: ${imageUrl}`);
+
+              html.style.setProperty('--theme-background-image', `url("${imageUrl}")`);
+            } else {
+              console.log("No images found in Pixabay response.");
+              html.style.removeProperty('--theme-background-image');
+            }
+          })
+          .catch(error => {
+            console.error("Error fetching Pixabay image:", error);
+            html.style.removeProperty('--theme-background-image');
+          });
+      } else {
+        // If not a Pixabay URL, use it directly as a background image
+        html.style.setProperty('--theme-background-image', `url("${randomUrl}")`);
+      }
     } else {
-
       html.style.removeProperty('--theme-background-image');
-
     }
-
   }
 };
+
 
 theme.background.video = {
   render: () => {
